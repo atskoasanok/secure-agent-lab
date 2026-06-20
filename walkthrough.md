@@ -95,3 +95,20 @@ Choosing between Git Hooks, Agent Hooks, and Remote CI/CD Gates requires balanci
 ### 5. Pytest Import Mismatches
 - **Root Cause**: If test files share identical filenames across folders (e.g., `tests/test_agent.py` and `tests/integration/test_agent.py`) and do not have an `__init__.py` package declaration, pytest treats them as root-level modules, triggering import mismatches.
 - **Remediation**: Place an empty `__init__.py` file in `tests/`, `tests/integration/`, and `tests/unit/` to isolate namespaces and prevent module clashes.
+
+---
+
+## Part 3: GitHub Deployment & Secret Scanning Protection
+
+### 1. Security Audit & Remediation
+- **Secret Tracking Detection**: Detected that the root `.env` file containing active API keys was previously tracked in the git history.
+- **Git Index Exclusion**:
+  - Created a root `.gitignore` to permanently exclude `.env`, `.venv`, and other local environment/IDE files.
+  - Ran `git rm --cached .env` to stop tracking `.env` on disk.
+- **History Purging**:
+  - Since GitHub Push Protection blocks any commits containing active secrets, we rewrote the repository history using `git filter-branch` to remove `.env` from all past commits (specifically the initial commit `a081cc2`).
+  - Committed the new `.gitignore` and untracking state using Conventional Commits convention: `chore(git): ignore env file and configure gitignore`.
+
+### 2. GitHub Push
+- Created the public GitHub repository at [atskoasanok/secure-agent-lab](https://github.com/atskoasanok/secure-agent-lab).
+- Successfully pushed the clean, rewritten commits to the `main` branch.
