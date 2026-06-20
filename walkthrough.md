@@ -55,3 +55,15 @@ Created `shopping-assistant/.agents/CONTEXT.md` defining local secure coding bou
 ### 2. Local Secure Context (`CONTEXT.md`)
 - **Paved Roads**: Centralizes security policies by enforcing parameter validation via Pydantic, preventing raw shell command executions, and defining a local self-correction loop for git pre-commit hooks.
 - **TDD Planning Gate**: Instructs the agent to decompose tasks and identify specific exploit vectors (Security Boundaries & Assertions) up-front during the planning phase, preventing insecure defaults before coding begins.
+
+### 3. Hook Choice Trade-offs & Security Barriers
+Choosing between Git Hooks, Agent Hooks, and Remote CI/CD Gates requires balancing immediate runtime safety against code integrity:
+- **Agent Hooks**: Capture events mid-trajectory to block dangerous tool execution (like system destruction) before they run, but only apply inside the wrapper environment.
+- **Git Hooks**: Native to version control to capture bad commits before leaving the machine, but can be bypassed with `--no-verify`.
+- **Remote CI/CD Gates**: Ultimate, unbypassable barriers on the cloud servers to prevent bad code from merging, but have a slower feedback loop.
+
+| Barrier Type | Best Used For | Strengths | Weaknesses |
+| :--- | :--- | :--- | :--- |
+| **Agent Hooks** | Live runtime/tool execution safety (e.g. blocking `rm`, preventing bad calls). | Runs instantly mid-action *before* any damage occurs. | Bypassed if developers run scripts outside the agent wrapper. |
+| **Git Hooks (Local)** | Instant developer feedback (formatting, lints, secret scans). | Fast feedback loop; prevents bad commits before leaving local workspace. | Easily bypassed using `git commit --no-verify`. |
+| **Remote CI/CD (Cloud)** | Ultimate compliance and pull-request gating. | Unbypassable; isolated runner execution. | Slower feedback loop; only runs after push. |
