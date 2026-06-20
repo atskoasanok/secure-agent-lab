@@ -15,6 +15,11 @@ I have completed the full development lifecycle for the ADK 2.0 `shopping-assist
 - Implemented `redeem_discount(code: str, user_id: str)` validating against the single-use `DISCOUNT_STORE` and preventing anonymous guest account redemptions (rejecting `guest_*` IDs).
 - Wrote isolated, outcome-based unit tests verifying all validation paths in `tests/unit/test_redeem_discount.py`.
 - **API telemetry fix**: Patched the `/feedback` endpoint in `app/fast_api_app.py` to catch Cloud Logging API failures and fall back to local logging. This allowed all **9 unit and integration tests** to pass successfully.
+- **Loyalty Points System**: Implemented the `award_loyalty_points(user_id: str, points: int, transaction_id: str)` tool, enforcing:
+  - Input validation using Pydantic (`AwardPointsRequest`) ensuring points are positive (`gt=0`) and capped at `10000`.
+  - Replay protection checking against a local transaction set (`PROCESSED_TRANSACTIONS`).
+  - Registered user validation checking against guest account prefixes.
+- **Loyalty Points Verification**: Added isolated, outcome-based unit tests verifying success, guest rejection, negative/zero points, upper limit guard, and replay attack protection in `tests/unit/test_award_loyalty_points.py`. All tests pass successfully (bringing the test suite to **14 passed** tests).
 
 ---
 
