@@ -1,0 +1,23 @@
+# Environments
+.env
+.venv/
+env/
+venv/
+
+# macOS
+.DS_Store
+
+# IDEs
+.idea/
+.vscode/
+
+# Python Cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Agent/ADK specific
+.adk/
+.google-agents-cli/
+.saved_chats/
