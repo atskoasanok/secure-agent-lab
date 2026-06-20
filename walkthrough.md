@@ -32,7 +32,8 @@ I have completed the full development lifecycle for the ADK 2.0 `shopping-assist
   - Role-based checking asserting that the caller's ID begins with `admin_`.
   - Storing the active status state in `DISCOUNT_STATUS`.
   - Checking active status in the code redemption pipeline and rejecting redemption for inactive codes.
-- **Discount Status Management Verification**: Added unit tests in `tests/unit/test_update_discount_status.py` covering successful toggles, non-admin rejection, invalid code handling, and verification that deactivated codes cannot be redeemed. All tests pass successfully (bringing the test suite to **24 passed** tests).
+- **Discount Status Management Verification**: Added unit tests in `tests/unit/test_update_discount_status.py` covering successful toggles, non-admin rejection, invalid code handling, and verification that deactivated codes cannot be redeemed. All tests pass successfully.
+- **Agent Security Test Suite**: Implemented `tests/test_agent.py` using `Runner` and `InMemorySessionService` to run end-to-end outcome-based tests verifying discount redemption guardrails (success, single-use, guest account debarment, active status toggles, and invalid codes). All tests pass successfully (bringing the test suite to **29 passed** tests).
 
 ---
 

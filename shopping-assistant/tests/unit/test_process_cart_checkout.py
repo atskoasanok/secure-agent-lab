@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from app.agent import CART_STORE, ORDER_STORE, DISCOUNT_STORE, process_cart_checkout
+from app.agent import CART_STORE, ORDER_STORE, DISCOUNT_STORE, DISCOUNT_STATUS, process_cart_checkout
 
 
 def test_checkout_success_no_discount() -> None:
@@ -44,6 +44,7 @@ def test_checkout_success_with_discount() -> None:
         "status": "active",
     }
     DISCOUNT_STORE.update({"WELCOME50": False})
+    DISCOUNT_STATUS.update({"WELCOME50": True})
     ORDER_STORE.clear()
 
     result = process_cart_checkout(cart_id="CART_TEST_2", discount_code="WELCOME50")
@@ -80,6 +81,7 @@ def test_checkout_guest_with_discount() -> None:
         "status": "active",
     }
     DISCOUNT_STORE.update({"SUMMER20": False})
+    DISCOUNT_STATUS.update({"SUMMER20": True})
     ORDER_STORE.clear()
 
     result = process_cart_checkout(cart_id="CART_TEST_4", discount_code="SUMMER20")
