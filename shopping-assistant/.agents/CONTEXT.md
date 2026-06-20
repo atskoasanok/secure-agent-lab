@@ -14,6 +14,7 @@ writing raw implementation logic from scratch.
    hook error (such as a Semgrep scan finding), you MUST treat the violation
    as a refactoring task, apply targeted fixes, run tests to verify no
    regressions, and attempt to commit again.
+4. **No Orphan Agent Folders**: Ensure that only the designated agent directory (e.g., `app/`) contains a `.adk` folder under the project root. Clean up any empty or redundant directories named after the project containing only `.adk` caches to avoid playground collision.
 
 ## TDD Planning Gate
 During the Plan phase, you must decompose the workspace task into logical,
