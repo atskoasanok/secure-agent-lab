@@ -19,6 +19,9 @@ model = Gemini(model="gemini-3.5-flash", api_key=api_key)  # type: ignore
 # In-memory discount redemption store (simulating database state)
 DISCOUNT_STORE: dict[str, bool] = {"WELCOME50": False, "SUMMER20": False}
 
+# In-memory discount status store (active vs inactive)
+DISCOUNT_STATUS: dict[str, bool] = {"WELCOME50": True, "SUMMER20": True}
+
 # In-memory stores for loyalty points
 LOYALTY_POINTS_STORE: dict[str, int] = {}
 PROCESSED_TRANSACTIONS: set[str] = set()
@@ -63,10 +66,18 @@ class CheckoutRequest(BaseModel):
     discount_code: str | None = Field(default=None, description="Optional discount code to apply to the cart.")
 
 
+class UpdateDiscountStatusRequest(BaseModel):
+    code: str = Field(description="The discount code to update.")
+    active: bool = Field(description="Whether to activate (True) or deactivate (False) the code.")
+    admin_id: str = Field(description="The ID of the administrator executing the update.")
+
+
 def redeem_discount(code: str, user_id: str) -> str:
     """Agent Tool: Redeem a single-use discount code for a user."""
     if code not in DISCOUNT_STORE:
         return "Error: Invalid discount code."
+    if code in DISCOUNT_STATUS and not DISCOUNT_STATUS[code]:
+        return "Error: Discount code is inactive."
     if DISCOUNT_STORE[code]:
         return "Error: Discount code has already been redeemed."
     if not user_id or user_id.startswith("guest_"):
@@ -154,11 +165,29 @@ def process_cart_checkout(cart_id: str, discount_code: str | None = None) -> str
         return f"Error: Checkout failed. {e}"
 
 
+def update_discount_status(code: str, active: bool, admin_id: str) -> str:
+    """Agent Tool: Update the active status of a discount code (admin only)."""
+    try:
+        req = UpdateDiscountStatusRequest(code=code, active=active, admin_id=admin_id)
+    except ValidationError as e:
+        return f"Error: Validation failed. {e}"
+
+    if not req.admin_id or not req.admin_id.startswith("admin_"):
+        return "Error: Administrator privileges required to update discount status."
+
+    if req.code not in DISCOUNT_STORE:
+        return "Error: Invalid discount code."
+
+    DISCOUNT_STATUS[req.code] = req.active
+    status_str = "activated" if req.active else "deactivated"
+    return f"Success: Discount code {req.code} has been {status_str} by administrator {req.admin_id}."
+
+
 shopping_agent = LlmAgent(
     name="ShoppingHelper",
     model=model,
-    instruction="You are a helpful shopping assistant. Use your tools to redeem discount codes, award loyalty points, and process cart checkout for users.",
-    tools=[redeem_discount, award_loyalty_points, process_cart_checkout],
+    instruction="You are a helpful shopping assistant. Use your tools to redeem discount codes, award loyalty points, process cart checkout, and update discount status for users.",
+    tools=[redeem_discount, award_loyalty_points, process_cart_checkout, update_discount_status],
 )
 
 root_workflow = Workflow(

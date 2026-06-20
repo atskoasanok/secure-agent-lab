@@ -26,7 +26,13 @@ I have completed the full development lifecycle for the ADK 2.0 `shopping-assist
   - Applying discount code rules with guest rejection validation.
   - Changing cart state and generating orders in `ORDER_STORE`.
   - Error rollback mechanism, restoring the discount code to active if checkout fails mid-transaction.
-- **Cart Checkout Verification**: Added unit tests in `tests/unit/test_process_cart_checkout.py` covering successful checks, discount logic, duplicate checkouts, guest checks, and empty carts. All tests pass successfully (bringing the test suite to **20 passed** tests).
+- **Cart Checkout Verification**: Added unit tests in `tests/unit/test_process_cart_checkout.py` covering successful checks, discount logic, duplicate checkouts, guest checks, and empty carts. All tests pass successfully.
+- **Discount Status Management (Admin)**: Implemented the `update_discount_status(code: str, active: bool, admin_id: str)` tool, enforcing:
+  - Input validation using Pydantic (`UpdateDiscountStatusRequest`).
+  - Role-based checking asserting that the caller's ID begins with `admin_`.
+  - Storing the active status state in `DISCOUNT_STATUS`.
+  - Checking active status in the code redemption pipeline and rejecting redemption for inactive codes.
+- **Discount Status Management Verification**: Added unit tests in `tests/unit/test_update_discount_status.py` covering successful toggles, non-admin rejection, invalid code handling, and verification that deactivated codes cannot be redeemed. All tests pass successfully (bringing the test suite to **24 passed** tests).
 
 ---
 
