@@ -23,6 +23,29 @@ DISCOUNT_STORE: dict[str, bool] = {"WELCOME50": False, "SUMMER20": False}
 LOYALTY_POINTS_STORE: dict[str, int] = {}
 PROCESSED_TRANSACTIONS: set[str] = set()
 
+# In-memory stores for carts and orders
+CART_STORE: dict[str, dict] = {
+    "CART_123": {
+        "user_id": "USER123",
+        "items": ["Item A", "Item B"],
+        "total": 150.00,
+        "status": "active",
+    },
+    "CART_456": {
+        "user_id": "guest_999",
+        "items": ["Item C"],
+        "total": 45.00,
+        "status": "active",
+    },
+    "CART_EMPTY": {
+        "user_id": "USER123",
+        "items": [],
+        "total": 0.00,
+        "status": "active",
+    },
+}
+ORDER_STORE: dict[str, dict] = {}
+
 
 class DiscountRequest(BaseModel):
     code: str = Field(description="The discount code to redeem.")
@@ -33,6 +56,11 @@ class AwardPointsRequest(BaseModel):
     user_id: str = Field(description="The ID of the user receiving the points.")
     points: int = Field(gt=0, le=10000, description="The number of points to award (must be positive and <= 10000).")
     transaction_id: str = Field(description="The unique transaction ID for the purchase.")
+
+
+class CheckoutRequest(BaseModel):
+    cart_id: str = Field(description="The unique ID of the cart to check out.")
+    discount_code: str | None = Field(default=None, description="Optional discount code to apply to the cart.")
 
 
 def redeem_discount(code: str, user_id: str) -> str:
@@ -67,11 +95,70 @@ def award_loyalty_points(user_id: str, points: int, transaction_id: str) -> str:
     return f"Success: Awarded {req.points} points to user {req.user_id} for transaction {req.transaction_id}."
 
 
+def process_cart_checkout(cart_id: str, discount_code: str | None = None) -> str:
+    """Agent Tool: Process checkout for a cart, optionally applying a discount code and generating an order."""
+    try:
+        req = CheckoutRequest(cart_id=cart_id, discount_code=discount_code)
+    except ValidationError as e:
+        return f"Error: Validation failed. {e}"
+
+    if req.cart_id not in CART_STORE:
+        return "Error: Invalid cart ID."
+
+    cart = CART_STORE[req.cart_id]
+
+    if cart["status"] != "active":
+        return f"Error: Cart {req.cart_id} is already checked out."
+
+    if not cart["items"] or cart["total"] <= 0:
+        return f"Error: Cart {req.cart_id} is empty."
+
+    discount_rate = 0.0
+    user_id = cart["user_id"]
+    applied_code = None
+
+    if req.discount_code:
+        redemption_result = redeem_discount(code=req.discount_code, user_id=user_id)
+        if redemption_result.startswith("Error:"):
+            return redemption_result
+
+        applied_code = req.discount_code
+        if applied_code == "WELCOME50":
+            discount_rate = 0.50
+        elif applied_code == "SUMMER20":
+            discount_rate = 0.20
+
+    try:
+        original_total = cart["total"]
+        discount_amount = original_total * discount_rate
+        final_total = original_total - discount_amount
+
+        cart["status"] = "checked_out"
+
+        order_id = f"ORDER_{req.cart_id}_{len(ORDER_STORE) + 1}"
+        ORDER_STORE[order_id] = {
+            "cart_id": req.cart_id,
+            "user_id": user_id,
+            "items": cart["items"],
+            "original_total": original_total,
+            "discount_code": applied_code,
+            "discount_amount": discount_amount,
+            "final_total": final_total,
+            "status": "processed",
+        }
+
+        return f"Success: Cart {req.cart_id} checked out successfully. Order {order_id} created with final total ${final_total:.2f}."
+    except Exception as e:
+        if applied_code and applied_code in DISCOUNT_STORE:
+            DISCOUNT_STORE[applied_code] = False
+        return f"Error: Checkout failed. {e}"
+
+
 shopping_agent = LlmAgent(
     name="ShoppingHelper",
     model=model,
-    instruction="You are a helpful shopping assistant. Use your tools to redeem discount codes and award loyalty points for users.",
-    tools=[redeem_discount, award_loyalty_points],
+    instruction="You are a helpful shopping assistant. Use your tools to redeem discount codes, award loyalty points, and process cart checkout for users.",
+    tools=[redeem_discount, award_loyalty_points, process_cart_checkout],
 )
 
 root_workflow = Workflow(

@@ -19,7 +19,14 @@ I have completed the full development lifecycle for the ADK 2.0 `shopping-assist
   - Input validation using Pydantic (`AwardPointsRequest`) ensuring points are positive (`gt=0`) and capped at `10000`.
   - Replay protection checking against a local transaction set (`PROCESSED_TRANSACTIONS`).
   - Registered user validation checking against guest account prefixes.
-- **Loyalty Points Verification**: Added isolated, outcome-based unit tests verifying success, guest rejection, negative/zero points, upper limit guard, and replay attack protection in `tests/unit/test_award_loyalty_points.py`. All tests pass successfully (bringing the test suite to **14 passed** tests).
+- **Loyalty Points Verification**: Added isolated, outcome-based unit tests verifying success, guest rejection, negative/zero points, upper limit guard, and replay attack protection in `tests/unit/test_award_loyalty_points.py`. All tests pass successfully.
+- **Cart Checkout System**: Implemented the `process_cart_checkout(cart_id: str, discount_code: str | None)` tool, enforcing:
+  - Input validation using Pydantic (`CheckoutRequest`).
+  - Checking that the cart exists in `CART_STORE`, is active, and is not empty.
+  - Applying discount code rules with guest rejection validation.
+  - Changing cart state and generating orders in `ORDER_STORE`.
+  - Error rollback mechanism, restoring the discount code to active if checkout fails mid-transaction.
+- **Cart Checkout Verification**: Added unit tests in `tests/unit/test_process_cart_checkout.py` covering successful checks, discount logic, duplicate checkouts, guest checks, and empty carts. All tests pass successfully (bringing the test suite to **20 passed** tests).
 
 ---
 
