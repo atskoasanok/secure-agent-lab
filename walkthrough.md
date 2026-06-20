@@ -74,6 +74,7 @@ Created `shopping-assistant/.agents/CONTEXT.md` defining local secure coding bou
 ### 2. Local Secure Context (`CONTEXT.md`)
 - **Paved Roads**: Centralizes security policies by enforcing parameter validation via Pydantic, preventing raw shell command executions, and defining a local self-correction loop for git pre-commit hooks.
 - **TDD Planning Gate**: Instructs the agent to decompose tasks and identify specific exploit vectors (Security Boundaries & Assertions) up-front during the planning phase, preventing insecure defaults before coding begins.
+- **Replica Cleanup Rule**: Instructs the agent to automatically clean up orphan/duplicate directories containing only `.adk` folders to prevent playground conflicts.
 
 ### 3. Hook Choice Trade-offs & Security Barriers
 Choosing between Git Hooks, Agent Hooks, and Remote CI/CD Gates requires balancing immediate runtime safety against code integrity:
@@ -86,3 +87,11 @@ Choosing between Git Hooks, Agent Hooks, and Remote CI/CD Gates requires balanci
 | **Agent Hooks** | Live runtime/tool execution safety (e.g. blocking `rm`, preventing bad calls). | Runs instantly mid-action *before* any damage occurs. | Bypassed if developers run scripts outside the agent wrapper. |
 | **Git Hooks (Local)** | Instant developer feedback (formatting, lints, secret scans). | Fast feedback loop; prevents bad commits before leaving local workspace. | Easily bypassed using `git commit --no-verify`. |
 | **Remote CI/CD (Cloud)** | Ultimate compliance and pull-request gating. | Unbypassable; isolated runner execution. | Slower feedback loop; only runs after push. |
+
+### 4. Running Local Playground & Multiple Agent Folders
+- **Root Cause**: If the directory contains a duplicate or empty package folder named after the project containing `.adk/` metadata alongside `app/` (e.g., `shopping_assistant/` and `app/`), the framework registers both. When launching `agents-cli playground`, the dev-ui defaults to connecting to the empty project-named folder, displaying a blank screen.
+- **Remediation**: Remove the redundant empty folder (`rm -rf shopping_assistant`) so the framework registers only the active `app/` agent, or explicitly visit `http://127.0.0.1:8000/dev-ui/?app=app`.
+
+### 5. Pytest Import Mismatches
+- **Root Cause**: If test files share identical filenames across folders (e.g., `tests/test_agent.py` and `tests/integration/test_agent.py`) and do not have an `__init__.py` package declaration, pytest treats them as root-level modules, triggering import mismatches.
+- **Remediation**: Place an empty `__init__.py` file in `tests/`, `tests/integration/`, and `tests/unit/` to isolate namespaces and prevent module clashes.
